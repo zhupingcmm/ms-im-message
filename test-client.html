@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8"/>
+    <title>IM P0 测试客户端</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 640px; margin: 24px auto; padding: 0 16px; }
+        fieldset { margin-bottom: 16px; }
+        input, button { padding: 6px 8px; font-size: 14px; }
+        #log { border: 1px solid #ddd; height: 320px; overflow-y: auto; padding: 8px; background: #fafafa; font-size: 13px; }
+        .me { color: #0a7; }
+        .in { color: #07a; }
+        .sys { color: #999; }
+        .err { color: #c00; }
+    </style>
+</head>
+<body>
+<h2>IM P0 测试客户端</h2>
+
+<fieldset>
+    <legend>1. 登录</legend>
+    用户名 <input id="username" value="alice"/>
+    密码 <input id="password" value="123456"/>
+    <button onclick="login()">登录并连接</button>
+    <div class="sys">演示账号：alice / bob，密码均为 123456</div>
+</fieldset>
+
+<fieldset>
+    <legend>2. 发消息</legend>
+    发给 userId <input id="to" value="1002" style="width:80px"/>
+    内容 <input id="content" value="hello" style="width:240px"/>
+    <button onclick="send()">发送</button>
+</fieldset>
+
+<div id="log"></div>
+
+<script>
+    const USER_API = 'http://localhost:8081';
+    const WS_URL = 'ws://localhost:8090/ws';
+    let ws = null;
+    let myUserId = null;
+
+    function log(msg, cls = '') {
+        const el = document.getElementById('log');
+        const line = document.createElement('div');
+        if (cls) line.className = cls;
+        line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+    }
+
+    async function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        try {
+            const res = await fetch(USER_API + '/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username, password})
+            });
+            const data = await res.json();
+            if (data.code !== 0) {
+                log('登录失败: ' + data.msg, 'err');
+                return;
+            }
+            myUserId = data.data.userId;
+            log('登录成功 userId=' + myUserId + ' nickname=' + data.data.nickname, 'sys');
+            connect(data.data.token);
+        } catch (e) {
+            log('登录请求异常: ' + e, 'err');
+        }
+    }
+
+    function connect(token) {
+        ws = new WebSocket(WS_URL);
+        ws.onopen = () => {
+            log('WebSocket 已连接，发送 LOGIN 帧', 'sys');
+            ws.send(JSON.stringify({type: 'LOGIN', token}));
+        };
+        ws.onmessage = (ev) => {
+            const m = JSON.parse(ev.data);
+            switch (m.type) {
+                case 'LOGIN_ACK':
+                    log('登录确认 LOGIN_ACK userId=' + m.userId, 'sys');
+                    break;
+                case 'SEND_ACK':
+                    log('发送回执 SEND_ACK clientMsgId=' + m.clientMsgId + ' msgId=' + m.msgId + ' seq=' + m.seq, 'me');
+                    break;
+                case 'MESSAGE':
+                    log('收到消息 from=' + m.from + ' seq=' + m.seq + ' : ' + m.content, 'in');
+                    break;
+                case 'ERROR':
+                    log('错误 code=' + m.code + ' ' + m.msg, 'err');
+                    break;
+                default:
+                    log('未知帧: ' + ev.data, 'sys');
+            }
+        };
+        ws.onclose = () => log('WebSocket 已关闭', 'sys');
+        ws.onerror = (e) => log('WebSocket 错误', 'err');
+    }
+
+    function send() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            log('请先登录连接', 'err');
+            return;
+        }
+        const to = parseInt(document.getElementById('to').value, 10);
+        const content = document.getElementById('content').value;
+        const clientMsgId = 'c-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        ws.send(JSON.stringify({type: 'SEND', clientMsgId, to, content}));
+        log('已发送 -> ' + to + ' : ' + content, 'me');
+    }
+</script>
+</body>
+</html>

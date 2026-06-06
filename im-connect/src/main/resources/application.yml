@@ -1,0 +1,31 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: im-connect
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: latest
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+
+# JWT 密钥需与 im-user 完全一致
+im:
+  jwt:
+    secret: "im-p0-shared-secret-please-change-in-prod-0123456789"
+    expire-millis: 604800000
+  gateway:
+    id: im-connect-1          # 本网关实例ID（也用作 Kafka 广播消费组）
+  netty:
+    port: 8090               # WebSocket 监听端口
+    path: /ws
