@@ -7,7 +7,7 @@ services:
     image: mysql:8.0
     container_name: im-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root123456
+      MYSQL_ROOT_PASSWORD: Admin_1234
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"
@@ -16,7 +16,7 @@ services:
       - im-mysql-data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123456"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pAdmin_1234"]
       interval: 10s
       timeout: 5s
       retries: 10

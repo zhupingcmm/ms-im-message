@@ -75,7 +75,7 @@ alice 自己看到 `SEND_ACK`（含 msgId/seq），bob 看到 `MESSAGE`。
 ## 验证落库
 
 ```bash
-docker exec -it im-mysql mysql -uroot -proot123456 \
+docker exec -it im-mysql mysql -uroot -pAdmin_1234 \
   -e "SELECT msg_id, conversation_id, seq, sender_id, content FROM im_message.message;"
 ```
 
