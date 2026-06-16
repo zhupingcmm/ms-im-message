@@ -5,7 +5,7 @@ spring:
   application:
     name: im-message
   datasource:
-    url: jdbc:mysql://localhost:3306/im_message?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://8.153.38.116:3306/im_message?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: root
     password: Admin_1234
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -15,17 +15,17 @@ spring:
     baseline-on-migrate: true
   data:
     redis:
-      host: localhost
+      host: 8.153.38.116
       port: 6379
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: 8.153.38.116:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: 8.153.38.116:8848
 
 mybatis-plus:
   configuration:

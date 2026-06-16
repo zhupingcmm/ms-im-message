@@ -85,12 +85,12 @@ docker exec -it im-mysql mysql -uroot -pAdmin_1234 \
 
 ## 端口一览
 
-| 服务/中间件 | 端口 |
-|---|---|
+| 服务/中间件 | 端口   |
+|---|------|
 | im-user | 8081 |
 | im-message | 8082 |
 | im-connect (HTTP) | 8083 |
-| im-connect (WebSocket) | 8090 |
+| im-connect (WebSocket) | 8091 |
 | MySQL | 3306 |
 | Redis | 6379 |
 | Nacos | 8848 |

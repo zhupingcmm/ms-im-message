@@ -1,0 +1,11 @@
+# =============================================================================
+# Nacos 配置中心 - im-user 专属配置 (data-id: im-user.yaml)
+#
+# nacos-config 按服务名自动加载 dataId=${spring.application.name}.yaml，无需声明。
+# 导入方式同 common.yaml：控制台 > 配置管理 > 新建配置
+#   Data ID: im-user.yaml  Group: DEFAULT_GROUP  格式: YAML
+# =============================================================================
+spring:
+  datasource:
+    # 账号/密码/驱动在 common.yaml 共享，此处只声明本服务自己的库
+    url: jdbc:mysql://8.153.38.116:3306/im_user?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
