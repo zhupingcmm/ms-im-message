@@ -7,17 +7,21 @@ spring:
   config:
     import:
       # 从 Nacos 导入共享配置（Redis/Kafka/JWT）
-      - optional:nacos:common.yaml?refresh=true
+      # 暂时禁用，使用本地配置测试
+      # - optional:nacos:common.yaml?refresh=true
+  data:
+    redis:
+      host: 8.153.38.116
+      port: 6379
+      password: Admin_1234
   cloud:
     nacos:
-      server-addr: ${NACOS_ADDR:8.153.38.116:8848}
-      config:
-        namespace: ${NACOS_NAMESPACE:public}
-        file-extension: yaml
       discovery:
-        namespace: ${NACOS_NAMESPACE:public}
+        enabled: false
+      config:
+        enabled: false
   kafka:
-    # bootstrap-servers 在 common.yaml；此处只放本服务的 consumer 配置
+    bootstrap-servers: 8.153.38.116:9092
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
