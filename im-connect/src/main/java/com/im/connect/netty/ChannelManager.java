@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -22,7 +23,8 @@ public class ChannelManager {
     }
 
     public void unbind(Channel channel) {
-        Long userId = channel.attr(USER_ID).get();
+        // 清空 attr，避免登出后连接断开时被 channelInactive 误判为仍登录
+        Long userId = channel.attr(USER_ID).getAndSet(null);
         if (userId != null) {
             userChannels.remove(userId, channel);
         }
@@ -35,5 +37,12 @@ public class ChannelManager {
     public boolean isOnline(long userId) {
         Channel c = userChannels.get(userId);
         return c != null && c.isActive();
+    }
+
+    /**
+     * 本实例当前在线连接的只读快照（userId -> Channel），供查询接口使用。
+     */
+    public Map<Long, Channel> snapshot() {
+        return Map.copyOf(userChannels);
     }
 }

@@ -17,9 +17,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        enabled: false
-      config:
-        enabled: false
+        server-addr: 8.153.38.116:8848
   kafka:
     bootstrap-servers: 8.153.38.116:9092
     consumer:

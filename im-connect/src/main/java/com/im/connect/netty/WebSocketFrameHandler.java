@@ -21,8 +21,8 @@ import org.springframework.stereotype.Component;
 /**
  * WebSocket 业务帧处理器（无状态、Sharable，单例共享给所有连接）。
  * 协议（JSON 文本帧）：
- *   入站  LOGIN {token}        | SEND {clientMsgId,to,content}
- *   出站  LOGIN_ACK {code,userId} | SEND_ACK {code,clientMsgId,msgId,seq} | MESSAGE {...} | ERROR {code,msg}
+ *   入站  LOGIN {token}        | LOGOUT {} | SEND {clientMsgId,to,content}
+ *   出站  LOGIN_ACK {code,userId} | LOGOUT_ACK {code,userId} | SEND_ACK {code,clientMsgId,msgId,seq} | MESSAGE {...} | ERROR {code,msg}
  */
 @Slf4j
 @Component
@@ -42,6 +42,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
         String type = node.path("type").asText();
         switch (type) {
             case "LOGIN" -> handleLogin(ctx, node);
+            case "LOGOUT" -> handleLogout(ctx);
             case "SEND" -> handleSend(ctx, node);
             default -> sendError(ctx.channel(), 40000, "unknown type: " + type);
         }
@@ -57,6 +58,11 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
             ctx.close();
             return;
         }
+        // 已登录拒绝重复登录：保留原有会话，不顶号
+        if (channelManager.isOnline(userId)) {
+            sendError(ctx.channel(), 40102, "user already logged in");
+            return;
+        }
         channelManager.bind(userId, ctx.channel());
         routeRegistry.online(userId);
         ObjectNode ack = objectMapper.createObjectNode();
@@ -65,6 +71,22 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
         ack.put("userId", userId);
         send(ctx.channel(), ack);
         log.info("user {} logged in, channel {}", userId, ctx.channel().id());
+    }
+
+    private void handleLogout(ChannelHandlerContext ctx) {
+        Long userId = ctx.channel().attr(ChannelManager.USER_ID).get();
+        if (userId == null) {
+            sendError(ctx.channel(), 40101, "not logged in");
+            return;
+        }
+        channelManager.unbind(ctx.channel());
+        routeRegistry.offline(userId);
+        ObjectNode ack = objectMapper.createObjectNode();
+        ack.put("type", "LOGOUT_ACK");
+        ack.put("code", 0);
+        ack.put("userId", userId);
+        send(ctx.channel(), ack);
+        log.info("user {} logged out, channel {}", userId, ctx.channel().id());
     }
 
     private void handleSend(ChannelHandlerContext ctx, JsonNode node) {

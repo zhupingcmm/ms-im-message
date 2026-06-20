@@ -22,11 +22,19 @@
     用户名 <input id="username" value="alice"/>
     密码 <input id="password" value="123456"/>
     <button onclick="login()">登录并连接</button>
+    <button onclick="logout()">登出</button>
     <div class="sys">演示账号：alice / bob，密码均为 123456</div>
+    <div class="sys">提示：已登录的用户再次登录会被服务端拒绝（ERROR 40102）；登出后可重新登录。</div>
 </fieldset>
 
 <fieldset>
-    <legend>2. 发消息</legend>
+    <legend>2. 在线用户</legend>
+    <button onclick="listOnline()">查看在线用户</button>
+    <span id="onlineCount" class="sys"></span>
+</fieldset>
+
+<fieldset>
+    <legend>3. 发消息</legend>
     发给 userId <input id="to" value="1002" style="width:80px"/>
     内容 <input id="content" value="hello" style="width:240px"/>
     <button onclick="send()">发送</button>
@@ -36,6 +44,7 @@
 
 <script>
     const USER_API = 'http://localhost:8081';
+    const CONNECT_API = 'http://localhost:8083';
     const WS_URL = 'ws://localhost:8091/ws';
     let ws = null;
     let myUserId = null;
@@ -83,6 +92,9 @@
                 case 'LOGIN_ACK':
                     log('登录确认 LOGIN_ACK userId=' + m.userId, 'sys');
                     break;
+                case 'LOGOUT_ACK':
+                    log('登出确认 LOGOUT_ACK userId=' + m.userId, 'sys');
+                    break;
                 case 'SEND_ACK':
                     log('发送回执 SEND_ACK clientMsgId=' + m.clientMsgId + ' msgId=' + m.msgId + ' seq=' + m.seq, 'me');
                     break;
@@ -98,6 +110,35 @@
         };
         ws.onclose = () => log('WebSocket 已关闭', 'sys');
         ws.onerror = (e) => log('WebSocket 错误', 'err');
+    }
+
+    async function listOnline() {
+        try {
+            const res = await fetch(CONNECT_API + '/sessions');
+            const data = await res.json();
+            if (data.code !== 0) {
+                log('查询在线用户失败: ' + data.msg, 'err');
+                return;
+            }
+            const sessions = data.data || [];
+            document.getElementById('onlineCount').textContent = '当前在线 ' + sessions.length + ' 人';
+            log('当前在线 ' + sessions.length + ' 人', 'sys');
+            sessions.forEach(s => {
+                log('  userId=' + s.userId + ' channel=' + s.channelId
+                    + ' addr=' + s.remoteAddress + ' active=' + s.active, 'in');
+            });
+        } catch (e) {
+            log('查询在线用户异常: ' + e, 'err');
+        }
+    }
+
+    function logout() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            log('当前未连接，无需登出', 'err');
+            return;
+        }
+        ws.send(JSON.stringify({type: 'LOGOUT'}));
+        log('已发送 LOGOUT 帧', 'me');
     }
 
     function send() {
