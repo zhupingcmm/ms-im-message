@@ -1,0 +1,20 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: im-media
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:8.153.38.116:8848}
+
+im:
+  media:
+    endpoint: ${MINIO_ENDPOINT:http://8.153.38.116:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: ${MINIO_BUCKET:im-media}
+    presign-expiry-seconds: 600
+    # 对外下载基址（CDN/反代）；留空则用 endpoint
+    public-base-url: ${MINIO_PUBLIC_BASE_URL:}

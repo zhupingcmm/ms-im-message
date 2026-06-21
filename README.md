@@ -38,11 +38,12 @@
 | [03-数据模型](docs/03-data-model.md) | MySQL（含消息分表）/ Redis 数据结构 |
 | [04-消息流程](docs/04-message-flow.md) | 单聊/群聊/多端同步时序图，可靠性设计 |
 | [05-落地路线](docs/05-roadmap.md) | P0~P3 分阶段计划、技术选型说明 |
+| [06-P1设计与计划](docs/06-p1-design.md) | P1（单聊完整）可执行设计、数据模型、任务拆解 |
 
 ## 项目状态
 
-🟢 **P0 已实现** — 单聊文本最小闭环（im-connect + im-user + im-message）可运行。
+🟢 **P0 已完成** — 单聊文本最小闭环（im-connect + im-user + im-message）可运行，并已补会话列表、历史拉取、未读、批量用户信息。
+
+🟡 **P1 进行中（设计就绪）** — 离线/多端漫游、已读回执、富媒体、统一鉴权，详见 [P1 设计与计划](docs/06-p1-design.md)。
 
 快速跑通见 [P0 运行指南](docs/P0-getting-started.md)：`docker compose up -d` 起中间件 → 构建 → 启动三个服务 → 打开 `test-client.html` 两端互发。
-
-后续阶段（P1 离线/富媒体/已读、P2 群聊、P3 规模化）详见 [落地路线](docs/05-roadmap.md)。

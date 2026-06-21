@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: im-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:8.153.38.116:8848}
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        - id: im-user-auth
+          uri: lb://im-user
+          predicates:
+            - Path=/auth/**
+        - id: im-user
+          uri: lb://im-user
+          predicates:
+            - Path=/users/**
+        - id: im-message
+          uri: lb://im-message
+          predicates:
+            - Path=/messages/**,/conversations/**,/sync/**
+        - id: im-media
+          uri: lb://im-media
+          predicates:
+            - Path=/media/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+
+# JWT 密钥需与 im-user / im-connect 一致；secret 经环境变量/Nacos 注入，下面仅本地兜底
+im:
+  jwt:
+    secret: ${IM_JWT_SECRET:im-p0-shared-secret-please-change-in-prod-0123456789}
+    expire-millis: 604800000

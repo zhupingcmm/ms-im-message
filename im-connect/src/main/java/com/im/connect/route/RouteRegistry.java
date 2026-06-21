@@ -26,4 +26,13 @@ public class RouteRegistry {
     public void offline(long userId) {
         redis.opsForSet().remove(RedisKeys.route(userId), gatewayId);
     }
+
+    /**
+     * 全局在线判断：route:{userId} 集合非空即在任一网关实例在线。
+     * 不依赖本实例的本地连接表，多网关部署下也准确。
+     */
+    public boolean isOnline(long userId) {
+        Long size = redis.opsForSet().size(RedisKeys.route(userId));
+        return size != null && size > 0;
+    }
 }

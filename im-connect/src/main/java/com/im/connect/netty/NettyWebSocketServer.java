@@ -13,6 +13,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,8 @@ public class NettyWebSocketServer {
     private int port;
     @Value("${im.netty.path}")
     private String path;
+    @Value("${im.netty.heartbeat-seconds:60}")
+    private int heartbeatSeconds;
 
     private final WebSocketFrameHandler frameHandler;
 
@@ -54,6 +57,8 @@ public class NettyWebSocketServer {
                         p.addLast(new ChunkedWriteHandler());
                         p.addLast(new HttpObjectAggregator(64 * 1024));
                         p.addLast(new WebSocketServerProtocolHandler(path, null, true));
+                        // 读空闲超过 heartbeatSeconds 触发 IdleStateEvent，由 frameHandler 关闭死连接
+                        p.addLast(new IdleStateHandler(heartbeatSeconds, 0, 0));
                         p.addLast(frameHandler);
                     }
                 });

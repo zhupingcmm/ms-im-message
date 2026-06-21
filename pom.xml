@@ -23,6 +23,9 @@
         <module>im-user</module>
         <module>im-message</module>
         <module>im-connect</module>
+        <module>im-gateway</module>
+        <module>im-media</module>
+        <module>im-push</module>
     </modules>
 
     <properties>

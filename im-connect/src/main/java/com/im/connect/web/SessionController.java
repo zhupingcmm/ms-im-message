@@ -22,11 +22,12 @@ public class SessionController {
 
     @GetMapping
     public Result<List<SessionView>> list() {
-        List<SessionView> sessions = channelManager.snapshot().entrySet().stream()
-                .map(e -> {
-                    Channel c = e.getValue();
+        List<SessionView> sessions = channelManager.snapshot().stream()
+                .map(o -> {
+                    Channel c = o.channel();
                     return new SessionView(
-                            e.getKey(),
+                            o.userId(),
+                            o.deviceId(),
                             c.id().asShortText(),
                             String.valueOf(c.remoteAddress()),
                             c.isActive());
@@ -38,6 +39,6 @@ public class SessionController {
     /**
      * 单个在线会话视图。
      */
-    public record SessionView(long userId, String channelId, String remoteAddress, boolean active) {
+    public record SessionView(long userId, String deviceId, String channelId, String remoteAddress, boolean active) {
     }
 }

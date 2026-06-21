@@ -14,6 +14,8 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -44,6 +46,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
             case "LOGIN" -> handleLogin(ctx, node);
             case "LOGOUT" -> handleLogout(ctx);
             case "SEND" -> handleSend(ctx, node);
+            case "PING" -> handlePing(ctx);
             default -> sendError(ctx.channel(), 40000, "unknown type: " + type);
         }
     }
@@ -58,19 +61,20 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
             ctx.close();
             return;
         }
-        // 已登录拒绝重复登录：保留原有会话，不顶号
-        if (channelManager.isOnline(userId)) {
-            sendError(ctx.channel(), 40102, "user already logged in");
-            return;
+        // P1 多端：允许同账号多设备登录，按 deviceId 区分；同设备重连覆盖旧连接
+        String deviceId = node.path("deviceId").asText("");
+        if (deviceId.isEmpty()) {
+            deviceId = ctx.channel().id().asShortText();
         }
-        channelManager.bind(userId, ctx.channel());
+        channelManager.bind(userId, deviceId, ctx.channel());
         routeRegistry.online(userId);
         ObjectNode ack = objectMapper.createObjectNode();
         ack.put("type", "LOGIN_ACK");
         ack.put("code", 0);
         ack.put("userId", userId);
+        ack.put("deviceId", deviceId);
         send(ctx.channel(), ack);
-        log.info("user {} logged in, channel {}", userId, ctx.channel().id());
+        log.info("user {} logged in, device {}, channel {}", userId, deviceId, ctx.channel().id());
     }
 
     private void handleLogout(ChannelHandlerContext ctx) {
@@ -80,7 +84,10 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
             return;
         }
         channelManager.unbind(ctx.channel());
-        routeRegistry.offline(userId);
+        // 仅当该用户在本实例已无其它在线连接时，才从路由表摘除
+        if (!channelManager.isOnline(userId)) {
+            routeRegistry.offline(userId);
+        }
         ObjectNode ack = objectMapper.createObjectNode();
         ack.put("type", "LOGOUT_ACK");
         ack.put("code", 0);
@@ -123,13 +130,33 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
         }
     }
 
+    private void handlePing(ChannelHandlerContext ctx) {
+        ObjectNode pong = objectMapper.createObjectNode();
+        pong.put("type", "PONG");
+        send(ctx.channel(), pong);
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+        if (evt instanceof IdleStateEvent e && e.state() == IdleState.READER_IDLE) {
+            // 读空闲超时：判定为死连接，关闭后由 channelInactive 清理路由
+            log.info("channel {} read idle, closing", ctx.channel().id());
+            ctx.close();
+        } else {
+            ctx.fireUserEventTriggered(evt);
+        }
+    }
+
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         Long userId = ctx.channel().attr(ChannelManager.USER_ID).get();
         channelManager.unbind(ctx.channel());
         if (userId != null) {
-            routeRegistry.offline(userId);
-            log.info("user {} disconnected", userId);
+            // 多端：仅当本实例已无该用户其它连接时才摘除路由
+            if (!channelManager.isOnline(userId)) {
+                routeRegistry.offline(userId);
+            }
+            log.info("user {} disconnected, channel {}", userId, ctx.channel().id());
         }
     }
 

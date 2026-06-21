@@ -9,7 +9,6 @@ import com.im.common.dto.SendMessageResponse;
 import com.im.common.id.Snowflake;
 import com.im.common.util.ConversationIdUtil;
 import com.im.message.entity.Message;
-import com.im.message.mapper.MessageMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -25,14 +24,14 @@ import java.time.ZoneId;
 @RequiredArgsConstructor
 public class MessageService {
 
-    private final MessageMapper messageMapper;
+    private final MessagePersister persister;
     private final StringRedisTemplate redis;
     private final Snowflake snowflake;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
     /**
-     * 单聊发送：幂等 -> 生成序号 -> 落库 -> 发 Kafka 下行。
+     * 单聊发送：幂等 -> 生成序号 -> 事务落库(message + 双方 inbox + 会话) -> 发 Kafka 下行。
      */
     public SendMessageResponse send(SendMessageRequest req) {
         // 1. 幂等：clientMsgId 命中则直接返回已存结果
@@ -53,7 +52,7 @@ public class MessageService {
         // 2. 会话内序号
         Long seq = redis.opsForValue().increment(RedisKeys.convSeq(conversationId));
 
-        // 3. 生成 msgId 并落库
+        // 3. 生成 msgId 并组装消息
         long msgId = snowflake.nextId();
         LocalDateTime now = LocalDateTime.now();
         Message msg = new Message();
@@ -65,7 +64,11 @@ public class MessageService {
         msg.setContent(req.getContent());
         msg.setStatus(1);
         msg.setCreatedAt(now);
-        messageMapper.insert(msg);
+
+        // 3.1 事务落库：message 正文 + 收发双方 inbox（写扩散）+ 会话摘要
+        String preview = req.getContent() == null ? ""
+                : (req.getContent().length() > 255 ? req.getContent().substring(0, 255) : req.getContent());
+        persister.persist(msg, from, to, conversationId, preview, now);
 
         long createdAt = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
