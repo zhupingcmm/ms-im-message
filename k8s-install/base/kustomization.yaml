@@ -1,0 +1,60 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Kustomize base —— 6 个 Spring Boot 服务的"裸"清单
+# 环境相关覆盖（镜像 tag、副本数、资源、域名）由 overlays/prod/ 提供
+
+namespace: im
+
+resources:
+  - namespace.yaml
+
+  # ConfigMap / Secret 模板
+  - configmap-common.yaml
+  - configmap-per-service/im-gateway-cm.yaml
+  - configmap-per-service/im-user-cm.yaml
+  - configmap-per-service/im-message-cm.yaml
+  - configmap-per-service/im-connect-cm.yaml
+  - configmap-per-service/im-media-cm.yaml
+  - configmap-per-service/im-push-cm.yaml
+  - secret-middleware.yaml   # 外部中间件凭据（MySQL/MinIO/Redis）
+  - secret-jwt.yaml          # JWT 共享密钥（与应用算法有关，独立管理）
+
+  # RBAC
+  - serviceaccount-im.yaml
+  - role-im-deployer.yaml
+  - rolebinding-im-deployer.yaml
+
+  # 6 个服务
+  - deployment-im-gateway.yaml
+  - deployment-im-user.yaml
+  - deployment-im-message.yaml
+  - deployment-im-connect.yaml
+  - deployment-im-media.yaml
+  - deployment-im-push.yaml
+
+  - service-im-gateway.yaml
+  - service-im-user.yaml
+  - service-im-message.yaml
+  - service-im-connect.yaml
+  - service-im-connect-actuator.yaml
+  - service-im-media.yaml
+  - service-im-push.yaml
+
+  # Ingress
+  - ingress-im-gateway.yaml
+  - ingress-im-connect.yaml
+
+  # 弹性伸缩 & 保护
+  - hpa-im-user.yaml
+  - hpa-im-message.yaml
+  - hpa-im-media.yaml
+  - hpa-im-push.yaml
+  - pdb-im-connect.yaml
+
+# 默认 labels：打到所有资源上
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/part-of: ms-im-message
+      app.kubernetes.io/managed-by: kustomize

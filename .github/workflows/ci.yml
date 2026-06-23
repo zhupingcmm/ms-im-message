@@ -1,0 +1,53 @@
+name: CI
+
+# 持续集成：PR + main/develop push 时触发
+# 只编译 + 跑单元测试，不构建镜像、不部署
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+# 防止重复触发：push to main 已经在 PR 跑过了，跳过
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: 17
+  MAVEN_OPTS: -Xmx2g -XX:MaxRAMPercentage=75.0
+
+jobs:
+  build:
+    name: Build & Test (JDK ${{ env.JAVA_VERSION }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+          cache-key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          cache-restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Make mvnw executable
+        run: chmod +x mvnw
+
+      - name: Verify (compile + test)
+        run: ./mvnw -B -e -ntp verify
+
+      - name: Upload surefire reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: '**/target/surefire-reports/*.xml'
+          if-no-files-found: ignore
+          retention-days: 7

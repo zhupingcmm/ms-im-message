@@ -5,3 +5,31 @@ target/
 .vscode/
 *.log
 logs/
+
+# ---- K8s / secrets ----
+.env
+.env.*
+!.env.example
+*.kubeconfig
+kubeconfig-*
+k8s-install/overlays/**/secrets.yaml
+k8s-install/overlays/**/secret-*.yaml
+k8s-install/overlays/**/kustomization.local.yaml
+
+# ---- 密钥 / 证书 ----
+*.pem
+*.key
+*.crt
+*.p12
+keystore.jks
+truststore.jks
+
+# ---- IDE / OS ----
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+
+# ---- Maven Wrapper jar（保留 .properties 与 mvnw 脚本）----
+# .mvn/wrapper/maven-wrapper.jar 已被 git 追踪，无需 ignore

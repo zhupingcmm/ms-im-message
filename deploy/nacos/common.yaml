@@ -6,28 +6,29 @@
 #   控制台 > 配置管理 > 配置列表 > 新建配置
 #     Data ID: common.yaml
 #     Group:   DEFAULT_GROUP
-#     Namespace: 与各服务 NACOS_NAMESPACE 一致（如 public / prod）
+#     Namespace: 与各服务 NACOS_NAMESPACE 一致（如 im-prod）
 #     配置格式: YAML
 #   把下面的内容粘贴进去并发布。
 #
-# 敏感值（密码、密钥）用 ${ENV} 占位，真实值由各服务部署环境的环境变量注入，
-# 因此 Nacos 中也不出现明文。
+# 敏感值（密码、密钥）用 ${ENV} 占位，真实值由 K8s Secret 注入。
+# 本文件中所有 8.153.38.116 兜底已删除——必须由 Nacos namespace 里的环境变量或
+# 共享 ConfigMap 覆盖，否则会启动失败（这是有意的，防止"忘记改 IP"事故）。
 # =============================================================================
 spring:
   datasource:
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:Admin_1234}
+    username: ${DB_USERNAME:im_app}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
-      host: ${REDIS_HOST:8.153.38.116}
+      host: ${REDIS_HOST:}
       port: ${REDIS_PORT:6379}
   kafka:
-    bootstrap-servers: ${KAFKA_ADDR:8.153.38.116:9092}
+    bootstrap-servers: ${KAFKA_ADDR:}
 
-# JWT 密钥需在 im-user 与 im-connect 间保持一致（HS256，至少 32 字节）
-# 集中放在这里后，两端自动一致，无需手动同步
+# JWT 共享密钥（im-user / im-connect / im-gateway 三者必须一致）
+# 真实值由 K8s Secret im-jwt-secret 注入 IM_JWT_SECRET env
 im:
   jwt:
-    secret: ${JWT_SECRET:im-p0-shared-secret-please-change-in-prod-0123456789}
+    secret: ${IM_JWT_SECRET:}
     expire-millis: 604800000   # 7 天

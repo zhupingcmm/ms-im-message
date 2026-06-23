@@ -1,0 +1,23 @@
+# im-connect WebSocket：Headless Service + sessionAffinity: ClientIP
+# 让每个 Pod 有独立 DNS A 记录（im-connect-0.im-connect.im.svc.cluster.local），
+# nginx-ingress 用 upstream-hash-by $binary_remote_addr 把同一客户端固定到同一 Pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: im-connect
+  namespace: im
+  labels:
+    app: im-connect
+spec:
+  type: ClusterIP
+  clusterIP: None           # headless
+  selector:
+    app: im-connect
+  ports:
+    - name: ws
+      port: 8091
+      targetPort: ws
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 小时粘性

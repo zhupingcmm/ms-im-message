@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: im-user-cm
+  namespace: im
+data:
+  SERVER_PORT: "8081"
+  NACOS_NAMESPACE: "im-prod"

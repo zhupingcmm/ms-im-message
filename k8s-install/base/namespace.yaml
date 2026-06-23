@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: im
+  labels:
+    app.kubernetes.io/part-of: ms-im-message
+    app.kubernetes.io/managed-by: kustomize

@@ -4,20 +4,23 @@ server:
 spring:
   application:
     name: im-connect
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:default}
   config:
     import:
       # 从 Nacos 导入共享配置（Redis/Kafka/JWT）
-      # 暂时禁用，使用本地配置测试
-      # - optional:nacos:common.yaml?refresh=true
+      # K8s 部署时 SPRING_PROFILES_ACTIVE=k8s 时启用
+      - optional:nacos:common.yaml?refresh=true
   data:
     redis:
       host: ${REDIS_HOST:8.153.38.116}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:Admin_1234}
+      password: ${REDIS_PASSWORD:}
   cloud:
     nacos:
       discovery:
         server-addr: ${NACOS_ADDR:8.153.38.116:8848}
+        namespace: ${NACOS_NAMESPACE:}
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS:8.153.38.116:9092}
     consumer:
@@ -28,14 +31,28 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
-# JWT 在 Nacos common.yaml 共享，im-user / im-connect 自动一致
-# 下面是本地兜底默认值，Nacos 连接成功后会被覆盖
+# Spring Boot Actuator - K8s 健康探针
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+      group:
+        readiness:
+          include: readinessState,redis,nacosDiscovery
+
+# JWT 共享密钥，需与 im-user / im-gateway 一致
 im:
   jwt:
     secret: ${IM_JWT_SECRET:im-p0-shared-secret-please-change-in-prod-0123456789}
     expire-millis: 604800000
   gateway:
-    id: ${IM_GATEWAY_ID:im-connect-1}   # 本网关实例ID（也用作 Kafka 广播消费组）
+    id: ${IM_GATEWAY_ID:im-connect-1}   # 本网关实例ID（K8s StatefulSet 会被 metadata.name 覆盖）
   netty:
     port: ${IM_NETTY_PORT:8091}         # WebSocket 监听端口
     path: ${IM_NETTY_PATH:/ws}

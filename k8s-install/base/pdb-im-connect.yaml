@@ -1,0 +1,11 @@
+# im-connect 不做 HPA（避免长连接被切），但用 PodDisruptionBudget 保活
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: im-connect
+  namespace: im
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: im-connect

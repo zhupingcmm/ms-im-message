@@ -1,7 +1,10 @@
 version: "3.8"
 
-# P0 中间件：MySQL + Redis + Nacos + Kafka(KRaft)
+# 本地开发用中间件：MySQL + Redis + Nacos + Kafka(KRaft) + MinIO
 # 启动： docker compose up -d
+#
+# ⚠️  本文件仅用于本地开发。生产环境请用 k8s-install/middleware/ 下的
+# StatefulSet 部署到 K8s 集群（详见 docs/07-deployment.md）。
 services:
   mysql:
     image: mysql:8.0

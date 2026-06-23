@@ -1,0 +1,82 @@
+# im-connect 用 StatefulSet：固定网络标识（im-connect-0, im-connect-1, ...）
+# 让 K8s Service / Ingress 解析到稳定 Pod 名，便于 Netty 客户端粘性
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: im-connect
+  namespace: im
+  labels:
+    app: im-connect
+spec:
+  serviceName: im-connect
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: im-connect
+  template:
+    metadata:
+      labels:
+        app: im-connect
+    spec:
+      serviceAccountName: im-app
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: im-connect
+          image: im-connect:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8083
+            - name: ws
+              containerPort: 8091
+          envFrom:
+            - configMapRef:
+                name: im-config
+            - configMapRef:
+                name: im-connect-cm
+            - secretRef:
+                name: im-jwt-secret
+            - secretRef:
+                name: im-middleware-secret   # MINIO_* / REDIS_PASSWORD
+          # 显式注入 Pod 名作为 IM_GATEWAY_ID（覆盖 ConfigMap 默认值）
+          env:
+            - name: IM_GATEWAY_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 500m
+              memory: 768Mi
+            limits:
+              cpu: 2000m
+              memory: 1.5Gi
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

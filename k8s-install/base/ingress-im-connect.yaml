@@ -1,0 +1,29 @@
+# WebSocket 入口：im-connect（Netty 长连接）
+# 关键：
+#   1. proxy-read-timeout / send-timeout = 3600s（覆盖 nginx 60s 默认，避免空闲连接被掐）
+#   2. proxy-buffering off（WebSocket 不允许缓冲）
+#   3. upstream-hash-by $binary_remote_addr（按客户端 IP 哈希，配合 Headless Service 粘性）
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: im-connect
+  namespace: im
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$binary_remote_addr"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: ws.example.com          # 由 overlays/prod/ 覆盖
+      http:
+        paths:
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: im-connect
+                port:
+                  number: 8091

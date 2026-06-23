@@ -6,7 +6,11 @@
       "Bash(docker --version)",
       "Bash(python -c \"import bcrypt; print\\(bcrypt.hashpw\\(b'123456', bcrypt.gensalt\\(rounds=10\\)\\).decode\\(\\)\\)\")",
       "Bash(python3 -c \"import bcrypt; print\\(bcrypt.hashpw\\(b'123456', bcrypt.gensalt\\(rounds=10\\)\\).decode\\(\\)\\)\")",
-      "Bash(mvn -q -e clean compile)"
+      "Bash(mvn -q -e clean compile)",
+      "Bash(kubectl kustomize *)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

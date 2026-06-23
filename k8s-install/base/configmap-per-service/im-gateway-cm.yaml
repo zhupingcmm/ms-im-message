@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: im-gateway-cm
+  namespace: im
+data:
+  SERVER_PORT: "8080"
+  # 网关专属：Nacos 命名空间
+  NACOS_NAMESPACE: "im-prod"

@@ -1,0 +1,84 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# overlays/prod —— 生产环境覆盖
+# 作用：
+#   1. 替换镜像 tag 为 ACR 上的真实版本
+#   2. 替换 Ingress 域名为生产域名
+#   3. 调整副本数 / 资源限制
+
+namespace: im
+
+resources:
+  - ../../base
+
+# ---------- 镜像 tag 覆盖 ----------
+# CD 流水线（cd.yml）会通过 `kustomize edit set image` 自动更新本段
+images:
+  - name: im-gateway
+    newName: registry.cn-hangzhou.aliyuncs.com/im-prod/im-gateway
+    newTag: v0.0.1
+  - name: im-user
+    newName: registry.cn-hangzhou.aliyuncs.com/im-prod/im-user
+    newTag: v0.0.1
+  - name: im-message
+    newName: registry.cn-hangzhou.aliyuncs.com/im-prod/im-message
+    newTag: v0.0.1
+  - name: im-connect
+    newName: registry.cn-hangzhou.aliyuncs.com/im-prod/im-connect
+    newTag: v0.0.1
+  - name: im-media
+    newName: registry.cn-hangzhou.aliyuncs.com/im-prod/im-media
+    newTag: v0.0.1
+  - name: im-push
+    newName: registry.cn-hangzhou.aliyuncs.com/im-prod/im-push
+    newTag: v0.0.1
+
+# ---------- Ingress 域名覆盖 ----------
+patches:
+  - target:
+      kind: Ingress
+      name: im-gateway
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: im.example.com
+
+  - target:
+      kind: Ingress
+      name: im-connect
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: ws.example.com
+
+  # 生产资源上限（比 base 更高）
+  - target:
+      kind: Deployment
+      name: im-user
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 500m, memory: 768Mi }
+          limits:   { cpu: 2000m, memory: 1.5Gi }
+
+  - target:
+      kind: Deployment
+      name: im-message
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 1000m, memory: 1Gi }
+          limits:   { cpu: 3000m, memory: 2Gi }
+
+  - target:
+      kind: Deployment
+      name: im-gateway
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests: { cpu: 500m, memory: 512Mi }
+          limits:   { cpu: 2000m, memory: 1Gi }

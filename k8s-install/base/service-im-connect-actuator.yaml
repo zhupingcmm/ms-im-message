@@ -1,0 +1,16 @@
+# im-connect 独立的 actuator Service：K8s 探针走这里，不走 WS 路径
+apiVersion: v1
+kind: Service
+metadata:
+  name: im-connect-actuator
+  namespace: im
+  labels:
+    app: im-connect
+spec:
+  type: ClusterIP
+  selector:
+    app: im-connect
+  ports:
+    - name: http
+      port: 8083
+      targetPort: http

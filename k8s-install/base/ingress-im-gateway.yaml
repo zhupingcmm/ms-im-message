@@ -1,0 +1,26 @@
+# HTTP 入口：im-gateway（Spring Cloud Gateway）对外
+# 域名由 overlays/prod/ 覆盖（默认 im.example.com）
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: im-gateway
+  namespace: im
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    # 简单的 IP 白名单示例（生产按需调整）
+    # nginx.ingress.kubernetes.io/whitelist-source-range: "1.2.3.0/24, 10.0.0.0/8"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: im.example.com          # 由 overlays/prod/ 覆盖
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: im-gateway
+                port:
+                  number: 8080

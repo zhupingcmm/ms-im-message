@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: im-deployer
+  namespace: im
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: im-deployer
+  namespace: im
+subjects:
+  - kind: ServiceAccount
+    name: im-deployer
+    namespace: im
+roleRef:
+  kind: Role
+  name: im-deployer
+  apiGroup: rbac.authorization.k8s.io

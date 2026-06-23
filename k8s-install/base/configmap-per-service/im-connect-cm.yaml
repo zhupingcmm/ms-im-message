@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: im-connect-cm
+  namespace: im
+data:
+  SERVER_PORT: "8083"
+  NACOS_NAMESPACE: "im-prod"
+  # 网关实例 ID（StatefulSet 模式下自动覆盖）
+  IM_GATEWAY_ID: "im-connect-0"
